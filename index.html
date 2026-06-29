@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>D'todojeans — Catálogo</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',sans-serif;background:#F9F5F0}
+    button{font-family:inherit;cursor:pointer}
+    input,select,textarea{font-family:inherit}
+    .spinner{display:inline-block;width:20px;height:20px;border:3px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media(max-width:600px){
+      .grid{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}
+      .foto{height:160px!important}
+      .filtros{flex-direction:column!important}
+      .cats{flex-wrap:wrap!important}
+      .header-h{height:54px!important}
+    }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ── CONFIG ────────────────────────────────────────────────
+const SUPA_URL = "https://otbmuvtmedudxxnhtbgo.supabase.co";
+const SUPA_KEY = "sb_publishable_3-UrBHLpBjiLm_wL1Wj44Q_xE9JmEdY";
+const WA_NUM   = "523310000000";
+const EJS_SVC  = "service_35vono3";
+const EJS_TPL  = "ise8c98";
+const EJS_KEY  = "niV_7fyNXftMXOH0Z";
+
+const ADMINS = {
+  jorge:  {pw:"Jeans2024#",  nombre:"Jorge"},
+  karina: {pw:"Karina2024!", nombre:"Karina"}
+};
+
+const C = {
+  denim:"#6B8FBF",denimD:"#4A6A96",rose:"#C9ABBA",
+  roseL:"#F0E8EE",ivory:"#F9F5F0",charcoal:"#2C2C2C",green:"#25d366"
+};
+
+const INITIAL_PRODUCTS = [{"id": 1, "codigo": "OL-793K", "marca": "OLIVY", "modelo": "Wide Leg Niña", "corte": "Wide Leg", "categoria": "niña", "color": "Azul medio", "tallas": ["6", "8", "10", "12", "14", "16"], "precios": {"6": 369, "8": 369, "10": 369, "12": 399, "14": 399, "16": 399}, "disponible": true, "imagen": ""}, {"id": 2, "codigo": "ES-2916K", "marca": "ESTUDIO S", "modelo": "Wide Leg Niña", "corte": "Wide Leg", "categoria": "niña", "color": "Azul oscuro", "tallas": ["8", "10", "12", "14", "16"], "precios": {"8": 369, "10": 369, "12": 399, "14": 399, "16": 399}, "disponible": true, "imagen": ""}, {"id": 3, "codigo": "DE-527K", "marca": "DEEZER", "modelo": "Wide Leg Niña", "corte": "Wide Leg", "categoria": "niña", "color": "Azul claro", "tallas": ["8", "10", "12", "14", "16"], "precios": {"8": 369, "10": 369, "12": 399, "14": 399, "16": 399}, "disponible": true, "imagen": ""}, {"id": 4, "codigo": "AG-1719K", "marca": "AGORSS", "modelo": "Wide Leg Niña", "corte": "Wide Leg", "categoria": "niña", "color": "Azul lavado", "tallas": ["8", "10", "12", "14", "16"], "precios": {"8": 369, "10": 369, "12": 399, "14": 399, "16": 399}, "disponible": true, "imagen": ""}, {"id": 5, "codigo": "AG-1718K", "marca": "AGORSS", "modelo": "Wide Leg Niña", "corte": "Wide Leg", "categoria": "niña", "color": "Azul medio", "tallas": ["8", "10", "12", "14", "16"], "precios": {"8": 369, "10": 369, "12": 399, "14": 399, "16": 399}, "disponible": true, "imagen": ""}, {"id": 6, "codigo": "AG-1707", "marca": "AGORSS", "modelo": "Marine con Cinto", "corte": "Marine", "categoria": "dama", "color": "Azul claro", "tallas": ["1", "3", "5", "7", "9", "11", "13", "15"], "precios": {"1": 435, "3": 435, "5": 435, "7": 435, "9": 435, "11": 435, "13": 435, "15": 435}, "disponible": true, "imagen": ""}, {"id": 7, "codigo": "DE-519", "marca": "DEEZER", "modelo": "Marine con Cinto", "corte": "Marine", "categoria": "dama", "color": "Negro", "tallas": ["1", "3", "5", "7", "9", "11", "13", "15"], "precios": {"1": 435, "3": 435, "5": 435, "7": 435, "9": 435, "11": 435, "13": 435, "15": 435}, "disponible": true, "imagen": ""}, {"id": 8, "codigo": "MON-3976", "marca": "MÓNACO", "modelo": "Marine con Cinto", "corte": "Marine", "categoria": "dama", "color": "Azul oscuro", "tallas": ["1", "3", "5", "7", "9", "11", "13", "15"], "precios": {"1": 435, "3": 435, "5": 435, "7": 435, "9": 435, "11": 435, "13": 435, "15": 435}, "disponible": true, "imagen": ""}, {"id": 9, "codigo": "DE-518", "marca": "DEEZER", "modelo": "Marine con Cinto", "corte": "Marine", "categoria": "dama", "color": "Azul claro", "tallas": ["1", "3", "5", "7", "9", "11", "13", "15"], "precios": {"1": 435, "3": 435, "5": 435, "7": 435, "9": 435, "11": 435, "13": 435, "15": 435}, "disponible": true, "imagen": ""}, {"id": 10, "codigo": "AG-1708", "marca": "AGORSS", "modelo": "Marine con Cinto", "corte": "Marine", "categoria": "dama", "color": "Negro", "tallas": ["1", "3", "5", "7", "9", "11", "13", "15"], "precios": {"1": 435, "3": 435, "5": 435, "7": 435, "9": 435, "11": 435, "13": 435, "15": 435}, "disponible": true, "imagen": ""}, {"id": 11, "codigo": "MON-3975", "marca": "MÓNACO", "modelo": "Marine con Cinto", "corte": "Marine", "categoria": "dama", "color": "Azul oscuro", "tallas": ["1", "3", "5", "7", "9", "11", "13", "15"], "precios": {"1": 435, "3": 435, "5": 435, "7": 435, "9": 435, "11": 435, "13": 435, "15": 435}, "disponible": true, "imagen": ""}, {"id": 12, "codigo": "OL-784", "marca": "OLIVY", "modelo": "Marine con Cinto", "corte": "Marine", "categoria": "dama", "color": "Azul medio", "tallas": ["1", "3", "5", "7", "9", "11", "13", "15"], "precios": {"1": 435, "3": 435, "5": 435, "7": 435, "9": 435, "11": 435, "13": 435, "15": 435}, "disponible": true, "imagen": ""}, {"id": 13, "codigo": "DE-510P", "marca": "DEEZER", "modelo": "Skinny Plus", "corte": "Skinny Plus", "categoria": "plus", "color": "Azul oscuro", "tallas": ["16", "18", "20", "22", "24"], "precios": {"16": 399, "18": 399, "20": 399, "22": 399, "24": 399}, "disponible": true, "imagen": ""}, {"id": 14, "codigo": "OL-712P", "marca": "OLIVY", "modelo": "Skinny Plus", "corte": "Skinny Plus", "categoria": "plus", "color": "Azul medio", "tallas": ["16", "18", "20", "22", "24"], "precios": {"16": 399, "18": 399, "20": 399, "22": 399, "24": 399}, "disponible": true, "imagen": ""}];
+
+// ── SUPABASE ──────────────────────────────────────────────
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+async function dbGetProducts() {
+  const {data,error} = await supa.from("productos").select("*").order("id");
+  if (error || !data || data.length===0) return null;
+  return data.map(p => ({
+    ...p,
+    tallas: p.tallas || [],
+    precios: p.precios || {},
+    disponible: p.disponible !== false
+  }));
+}
+
+async function dbSaveProduct(p) {
+  const row = {
+    codigo:p.codigo, marca:p.marca, modelo:p.modelo,
+    corte:p.corte, color:p.color, categoria:p.categoria,
+    tallas:p.tallas, precios:p.precios,
+    disponible:p.disponible, imagen:p.imagen||""
+  };
+  if (p.db_id) {
+    return await supa.from("productos").update(row).eq("id", p.db_id);
+  } else {
+    return await supa.from("productos").upsert(row, {onConflict:"codigo"});
+  }
+}
+
+async function dbInitProducts(products) {
+  for (const p of products) {
+    await supa.from("productos").upsert({
+      codigo:p.codigo, marca:p.marca, modelo:p.modelo,
+      corte:p.corte, color:p.color, categoria:p.categoria,
+      tallas:p.tallas, precios:p.precios,
+      disponible:p.disponible!==false, imagen:p.imagen||""
+    }, {onConflict:"codigo"});
+  }
+}
+
+async function dbGetOrders() {
+  const {data} = await supa.from("pedidos").select("*").order("fecha", {ascending:false});
+  return data || [];
+}
+
+async function dbAddOrder(pedido) {
+  const {data} = await supa.from("pedidos").insert({
+    nombre:pedido.nombre, telefono:pedido.telefono,
+    codigo:pedido.codigo, marca:pedido.marca,
+    modelo:pedido.modelo, corte:pedido.corte,
+    color:pedido.color, talla:pedido.talla,
+    precio:pedido.precio, estado:"Pendiente"
+  }).select();
+  return data?.[0];
+}
+
+async function dbUpdateOrderStatus(id, estado) {
+  await supa.from("pedidos").update({estado}).eq("id", id);
+}
+
+async function dbDeleteOrder(id) {
+  await supa.from("pedidos").delete().eq("id", id);
+}
+
+// ── EMAILJS ───────────────────────────────────────────────
+async function sendEmail(pedido) {
+  try {
+    emailjs.init(EJS_KEY);
+    await emailjs.send(EJS_SVC, EJS_TPL, {
+      cliente:pedido.nombre, telefono:pedido.telefono,
+      codigo:pedido.codigo, marca:pedido.marca,
+      corte:pedido.corte, color:pedido.color,
+      talla:pedido.talla, precio:"$"+pedido.precio+" MXN",
+      fecha:new Date().toLocaleString("es-MX"),
+      to_email:"dtodojeans.jorge@gmail.com"
+    });
+  } catch(e){console.warn("Email:",e);}
+}
+
+// ── EXCEL ─────────────────────────────────────────────────
+function exportCSV(orders) {
+  const rows=[["#","Fecha","Cliente","Teléfono","Código","Marca","Modelo","Color","Talla","Precio","Estado"]];
+  orders.forEach((o,i)=>rows.push([i+1,new Date(o.fecha).toLocaleString("es-MX"),
+    o.nombre,o.telefono,o.codigo,o.marca,o.modelo||"",o.color,o.talla,"$"+o.precio,o.estado||"Pendiente"]));
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'')+'"').join(",")).join("\n");
+  const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download="pedidos-dtodojeans-"+new Date().toISOString().slice(0,10)+".csv";
+  a.click();URL.revokeObjectURL(url);
+}
+
+// ── IMAGE UTILS ───────────────────────────────────────────
+function compressImage(file) {
+  return new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement("canvas");
+        const ratio=Math.min(400/img.width,500/img.height,1);
+        canvas.width=img.width*ratio; canvas.height=img.height*ratio;
+        canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
+        resolve(canvas.toDataURL("image/jpeg",0.7).split(",")[1]);
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── REACT ─────────────────────────────────────────────────
+const {createElement:h,useState,useEffect,useRef,Fragment} = React;
+
+const WaIcon=()=>h("svg",{width:16,height:16,viewBox:"0 0 24 24",fill:"currentColor"},
+  h("path",{d:"M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"})
+);
+
+// ── PRODUCT CARD ──────────────────────────────────────────
+function ProductCard({product:p, onOrder}) {
+  const [talla,setTalla]=useState("");
+  const precios=Object.values(p.precios||{});
+  const min=precios.length?Math.min(...precios):0;
+  const max=precios.length?Math.max(...precios):0;
+
+  return h("div",{style:{background:"#fff",borderRadius:16,overflow:"hidden",
+    boxShadow:"0 2px 12px rgba(107,143,191,0.12)",border:"1px solid "+C.roseL,
+    display:"flex",flexDirection:"column"}},
+    h("div",{className:"foto",style:{position:"relative",height:220,overflow:"hidden",background:C.roseL}},
+      p.imagen
+        ?h("img",{src:"data:image/jpeg;base64,"+p.imagen,alt:p.codigo,style:{width:"100%",height:"100%",objectFit:"cover"}})
+        :h("div",{style:{height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:44,color:C.rose}},"👖"),
+      h("div",{style:{position:"absolute",top:8,left:8,display:"flex",flexDirection:"column",gap:3}},
+        h("span",{style:{background:C.denim+"ee",color:"#fff",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:20}},p.codigo),
+        h("span",{style:{background:C.rose+"ee",color:"#fff",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:20}},p.marca)
+      ),
+      !p.disponible&&h("div",{style:{position:"absolute",inset:0,background:"rgba(0,0,0,0.55)",display:"flex",alignItems:"center",justifyContent:"center"}},
+        h("span",{style:{color:"#fff",fontWeight:800,fontSize:16,letterSpacing:2}},"AGOTADO")
+      )
+    ),
+    h("div",{style:{padding:"12px 12px 14px",flex:1,display:"flex",flexDirection:"column",gap:6}},
+      h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"start"}},
+        h("div",{style:{flex:1,paddingRight:6}},
+          h("p",{style:{margin:0,fontSize:14,fontWeight:800,color:C.charcoal,fontFamily:"Georgia,serif",lineHeight:1.2}},p.modelo),
+          h("p",{style:{margin:"2px 0 0",fontSize:10,color:C.rose,fontWeight:600}},p.corte+" · "+p.color)
+        ),
+        h("span",{style:{fontSize:16,fontWeight:900,color:C.denim,flexShrink:0}},
+          talla?"$"+(p.precios[talla]||0):(min===max?"$"+min:"$"+min+"–$"+max))
+      ),
+      h("div",null,
+        h("p",{style:{margin:"0 0 4px",fontSize:9,fontWeight:700,color:C.rose,textTransform:"uppercase",letterSpacing:1}},"Selecciona talla"),
+        h("div",{style:{display:"flex",flexWrap:"wrap",gap:3}},
+          (p.tallas||[]).map(t=>h("button",{key:t,onClick:()=>setTalla(t===talla?"":t),
+            style:{padding:"4px 6px",borderRadius:7,fontSize:10,fontWeight:700,minWidth:32,textAlign:"center",
+              border:"2px solid "+(talla===t?C.denim:C.roseL),
+              background:talla===t?C.denim:"#fff",color:talla===t?"#fff":C.charcoal}},
+            h("div",null,t),
+            h("div",{style:{fontSize:8,opacity:0.85}},"$"+(p.precios[t]||0))
+          ))
+        )
+      ),
+      h("button",{onClick:()=>{
+        if(!p.disponible)return;
+        if(!talla){alert("Selecciona una talla");return;}
+        onOrder(p,talla);
+      },disabled:!p.disponible,
+        style:{marginTop:"auto",display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+          background:p.disponible?C.green:"#ccc",color:"#fff",border:"none",
+          borderRadius:10,padding:"10px 8px",fontWeight:700,fontSize:12,
+          cursor:p.disponible?"pointer":"not-allowed"}},
+        h(WaIcon),," Pedir por WhatsApp"
+      )
+    )
+  );
+}
+
+// ── MODAL PEDIDO ──────────────────────────────────────────
+function ModalPedido({product:p, talla, onClose, onConfirm}) {
+  const [nombre,setNombre]=useState("");
+  const [tel,setTel]=useState("");
+  const [err,setErr]=useState("");
+  const [loading,setLoading]=useState(false);
+
+  async function enviar(){
+    if(!nombre.trim()){setErr("Escribe tu nombre");return;}
+    if(tel.length<10){setErr("Escribe tu teléfono (10 dígitos)");return;}
+    setLoading(true);
+    await onConfirm({nombre:nombre.trim(),telefono:tel.trim()});
+    setLoading(false);
+  }
+
+  return h("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}},
+    h("div",{style:{background:"#fff",borderRadius:20,padding:24,width:"100%",maxWidth:400,boxShadow:"0 24px 64px rgba(0,0,0,0.3)"}},
+      h("h2",{style:{margin:"0 0 4px",color:C.denim,fontFamily:"Georgia,serif",fontSize:18}},"Confirmar pedido"),
+      h("p",{style:{margin:"0 0 14px",fontSize:12,color:"#888"}},"Llena tus datos para registrar tu pedido"),
+      h("div",{style:{background:C.roseL,borderRadius:12,padding:12,marginBottom:14}},
+        h("p",{style:{margin:0,fontWeight:700,fontSize:13,color:C.charcoal}},p.codigo+" · "+p.marca),
+        h("p",{style:{margin:"2px 0",fontSize:11,color:"#888"}},p.corte+" · "+p.color),
+        h("p",{style:{margin:"2px 0",fontSize:14,fontWeight:800,color:C.denim}},"Talla "+talla+" · $"+(p.precios[talla]||0)+" MXN")
+      ),
+      h("div",{style:{marginBottom:10}},
+        h("label",{style:{fontSize:11,fontWeight:700,color:C.rose,display:"block",marginBottom:4,textTransform:"uppercase"}},"Tu nombre completo *"),
+        h("input",{value:nombre,onChange:e=>setNombre(e.target.value),placeholder:"Ej: María García",
+          style:{width:"100%",padding:"10px 12px",border:"2px solid "+C.roseL,borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box"}})
+      ),
+      h("div",{style:{marginBottom:14}},
+        h("label",{style:{fontSize:11,fontWeight:700,color:C.rose,display:"block",marginBottom:4,textTransform:"uppercase"}},"Tu teléfono *"),
+        h("input",{value:tel,onChange:e=>setTel(e.target.value.replace(/\D/g,"")),placeholder:"3312345678",maxLength:10,type:"tel",
+          style:{width:"100%",padding:"10px 12px",border:"2px solid "+C.roseL,borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box"}})
+      ),
+      err&&h("p",{style:{margin:"0 0 10px",fontSize:12,color:"#dc2626"}},"⚠️ "+err),
+      h("div",{style:{display:"flex",gap:8}},
+        h("button",{onClick:enviar,disabled:loading,
+          style:{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:12,
+            background:loading?"#aaa":C.green,color:"#fff",border:"none",borderRadius:12,fontWeight:700,fontSize:14}},
+          loading?h("span",{className:"spinner"}):h(Fragment,null,h(WaIcon)," Enviar pedido")
+        ),
+        h("button",{onClick:onClose,style:{padding:"12px 16px",background:C.roseL,border:"none",borderRadius:12,fontWeight:600}},"Cancelar")
+      ),
+      h("p",{style:{margin:"8px 0 0",fontSize:10,color:"#aaa",textAlign:"center"}},"📧 Se notificará a Jorge y Karina automáticamente")
+    )
+  );
+}
+
+// ── LOGIN ADMIN ───────────────────────────────────────────
+function LoginAdmin({onLogin,onCancel}) {
+  const [user,setUser]=useState("");
+  const [pass,setPass]=useState("");
+  const [show,setShow]=useState(false);
+  const [err,setErr]=useState("");
+
+  function go(){
+    const u=ADMINS[user.trim().toLowerCase()];
+    if(!u||u.pw!==pass){setErr("Usuario o contraseña incorrectos");return;}
+    onLogin({username:user.trim().toLowerCase(),nombre:u.nombre});
+  }
+
+  return h("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}},
+    h("div",{style:{background:"#fff",borderRadius:20,padding:"32px 28px",width:"100%",maxWidth:360,boxShadow:"0 24px 64px rgba(0,0,0,0.3)"}},
+      h("div",{style:{textAlign:"center",marginBottom:22}},
+        h("div",{style:{fontSize:40,marginBottom:6}},"🔒"),
+        h("h2",{style:{margin:0,fontSize:20,fontWeight:900,color:C.denim,fontFamily:"Georgia,serif"}},"Acceso Admin"),
+        h("p",{style:{margin:"4px 0 0",fontSize:11,color:C.rose}},"D'todojeans")
+      ),
+      h("div",{style:{marginBottom:10}},
+        h("label",{style:{fontSize:11,fontWeight:700,color:C.rose,display:"block",marginBottom:4,textTransform:"uppercase"}},"Usuario"),
+        h("input",{value:user,onChange:e=>setUser(e.target.value),placeholder:"jorge / karina",
+          style:{width:"100%",padding:"10px 12px",border:"2px solid "+C.roseL,borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box"}})
+      ),
+      h("div",{style:{marginBottom:14,position:"relative"}},
+        h("label",{style:{fontSize:11,fontWeight:700,color:C.rose,display:"block",marginBottom:4,textTransform:"uppercase"}},"Contraseña"),
+        h("input",{value:pass,onChange:e=>setPass(e.target.value),type:show?"text":"password",
+          onKeyDown:e=>e.key==="Enter"&&go(),placeholder:"••••••••",
+          style:{width:"100%",padding:"10px 40px 10px 12px",border:"2px solid "+C.roseL,borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box"}}),
+        h("button",{onClick:()=>setShow(s=>!s),style:{position:"absolute",right:10,top:28,background:"none",border:"none",fontSize:14}},show?"🙈":"👁️")
+      ),
+      err&&h("p",{style:{margin:"0 0 10px",fontSize:12,color:"#dc2626"}},"⚠️ "+err),
+      h("div",{style:{display:"flex",gap:8}},
+        h("button",{onClick:go,style:{flex:1,padding:11,background:"linear-gradient(135deg,"+C.denim+","+C.denimD+")",color:"#fff",border:"none",borderRadius:10,fontWeight:700,fontSize:14}},"Entrar"),
+        h("button",{onClick:onCancel,style:{padding:"11px 16px",background:C.roseL,border:"none",borderRadius:10,fontWeight:600}},"Cancelar")
+      )
+    )
+  );
+}
+
+// ── PANEL ADMIN ───────────────────────────────────────────
+function AdminPanel({products,setProducts,orders,setOrders,onClose}) {
+  const [tab,setTab]=useState("pedidos");
+  const [editing,setEditing]=useState(null);
+  const [form,setForm]=useState({});
+  const [saving,setSaving]=useState(false);
+  const [uploading,setUploading]=useState(false);
+  const [bulkFiles,setBulkFiles]=useState([]);
+  const [bulkProgress,setBulkProgress]=useState(null);
+  const fileRef=useRef();
+  const bulkRef=useRef();
+
+  const pendientes=orders.filter(o=>!o.estado||o.estado==="Pendiente").length;
+
+  function openEdit(p){setForm({...p,precios:{...p.precios}});setEditing(p.id||p.db_id);}
+
+  async function handleFile(e){
+    const file=e.target.files[0]; if(!file)return;
+    const b64=await compressImage(file);
+    setForm(f=>({...f,imagen:b64}));
+  }
+
+  async function saveProduct(){
+    setSaving(true);
+    const updated={...form};
+    await dbSaveProduct(updated);
+    setProducts(prev=>prev.map(p=>(p.codigo===updated.codigo?{...updated}:p)));
+    setEditing(null);setSaving(false);
+  }
+
+  // CARGA MASIVA DE FOTOS
+  async function handleBulkUpload(e){
+    const files=Array.from(e.target.files);
+    if(!files.length)return;
+    setUploading(true);
+    setBulkProgress({total:files.length,done:0,results:[]});
+
+    const results=[];
+    for(let i=0;i<files.length;i++){
+      const file=files[i];
+      // Try to match by reading image and checking against product list
+      // We show a preview for user to assign
+      const b64=await compressImage(file);
+      results.push({file:file.name,b64,assigned:null,preview:b64});
+      setBulkProgress({total:files.length,done:i+1,results:[...results]});
+    }
+    setBulkFiles(results);
+    setUploading(false);
+  }
+
+  async function assignBulkImage(idx,codigo){
+    const updated=[...bulkFiles];
+    updated[idx].assigned=codigo;
+    setBulkFiles(updated);
+  }
+
+  async function saveBulkImages(){
+    setSaving(true);
+    let saved=0;
+    for(const f of bulkFiles){
+      if(!f.assigned)continue;
+      const p=products.find(p=>p.codigo===f.assigned);
+      if(!p)continue;
+      const updated={...p,imagen:f.b64};
+      await dbSaveProduct(updated);
+      setProducts(prev=>prev.map(x=>x.codigo===f.assigned?{...x,imagen:f.b64}:x));
+      saved++;
+    }
+    setBulkFiles([]);
+    setBulkProgress(null);
+    setSaving(false);
+    alert("✅ "+saved+" fotos guardadas correctamente");
+  }
+
+  async function updateStatus(id,estado){
+    await dbUpdateOrderStatus(id,estado);
+    setOrders(prev=>prev.map(o=>o.id===id?{...o,estado}:o));
+  }
+
+  async function deleteOrder(id){
+    if(!confirm("¿Eliminar pedido?"))return;
+    await dbDeleteOrder(id);
+    setOrders(prev=>prev.filter(o=>o.id!==id));
+  }
+
+  return h("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:1500,display:"flex",flexDirection:"column"}},
+    h("div",{style:{background:"#fff",flex:1,overflow:"auto",borderRadius:"20px 20px 0 0",marginTop:20}},
+
+      // Header
+      h("div",{style:{background:"linear-gradient(135deg,"+C.denim+","+C.denimD+")",padding:"14px 20px",
+        display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:10}},
+        h("h2",{style:{margin:0,fontSize:17,fontWeight:900,color:"#fff",fontFamily:"Georgia,serif"}},"⚙️ Panel Admin"),
+        h("button",{onClick:onClose,style:{background:"rgba(255,255,255,0.2)",border:"none",color:"#fff",borderRadius:8,padding:"6px 12px",fontWeight:700}},"✕ Cerrar")
+      ),
+
+      // Tabs
+      h("div",{style:{display:"flex",borderBottom:"2px solid "+C.roseL,position:"sticky",top:52,background:"#fff",zIndex:9}},
+        [{k:"pedidos",l:"📋 Pedidos"+(pendientes>0?" ("+pendientes+")":"")},
+         {k:"productos",l:"📦 Productos"},
+         {k:"fotos",l:"🖼️ Cargar Fotos"}
+        ].map(t=>h("button",{key:t.k,onClick:()=>{setTab(t.k);setEditing(null);},
+          style:{flex:1,padding:"12px 4px",border:"none",background:tab===t.k?C.roseL:"#fff",
+            color:tab===t.k?C.denim:C.charcoal,fontWeight:700,fontSize:11,
+            borderBottom:tab===t.k?"3px solid "+C.denim:"3px solid transparent"}},t.l))
+      ),
+
+      h("div",{style:{padding:"16px 16px 40px"}},
+
+        // ── TAB FOTOS (CARGA MASIVA) ──
+        tab==="fotos"&&h("div",null,
+          h("h3",{style:{margin:"0 0 8px",color:C.denim,fontFamily:"Georgia,serif"}},"🖼️ Carga masiva de fotos"),
+          h("p",{style:{margin:"0 0 16px",fontSize:13,color:"#666"}},"Selecciona todas las fotos de los proveedores de una vez. Luego asignas cada foto al producto correcto."),
+
+          bulkFiles.length===0&&h("div",null,
+            h("button",{onClick:()=>bulkRef.current.click(),
+              style:{width:"100%",padding:20,border:"3px dashed "+C.denim,borderRadius:16,
+                background:C.roseL,color:C.denim,fontWeight:700,fontSize:15,marginBottom:8}},
+              uploading?"⏳ Procesando fotos...":"📁 Seleccionar todas las fotos del proveedor"),
+            h("input",{ref:bulkRef,type:"file",accept:"image/*",multiple:true,onChange:handleBulkUpload,style:{display:"none"}}),
+            h("p",{style:{fontSize:11,color:"#aaa",textAlign:"center"}},"Puedes seleccionar 10, 20, 30 fotos a la vez")
+          ),
+
+          bulkProgress&&bulkFiles.length===0&&h("div",{style:{textAlign:"center",padding:20}},
+            h("div",{className:"spinner",style:{borderTopColor:C.denim,borderColor:C.roseL}}),
+            h("p",{style:{marginTop:10,color:C.denim}}),"Procesando "+bulkProgress.done+" de "+bulkProgress.total+"..."
+          ),
+
+          bulkFiles.length>0&&h("div",null,
+            h("p",{style:{fontSize:13,fontWeight:700,color:C.charcoal,marginBottom:12}},
+              bulkFiles.length+" fotos cargadas — Asigna cada una a su producto:"),
+            bulkFiles.map((f,idx)=>h("div",{key:idx,style:{display:"flex",gap:10,alignItems:"center",
+              background:"#fff",borderRadius:12,padding:10,marginBottom:8,border:"1px solid "+C.roseL}},
+              h("img",{src:"data:image/jpeg;base64,"+f.b64,style:{width:60,height:72,objectFit:"cover",borderRadius:8,flexShrink:0}}),
+              h("div",{style:{flex:1}},
+                h("p",{style:{margin:"0 0 6px",fontSize:11,color:"#888",wordBreak:"break-all"}},f.file),
+                h("select",{value:f.assigned||"",onChange:e=>assignBulkImage(idx,e.target.value),
+                  style:{width:"100%",padding:"8px 10px",border:"2px solid "+(f.assigned?C.denim:C.roseL),
+                    borderRadius:8,fontSize:12,fontWeight:700,color:f.assigned?C.denim:C.charcoal}},
+                  h("option",{value:""},"— Selecciona el producto —"),
+                  products.map(p=>h("option",{key:p.codigo,value:p.codigo},p.codigo+" · "+p.marca+" · "+p.color))
+                )
+              ),
+              f.assigned&&h("span",{style:{fontSize:18}},"✅")
+            )),
+            h("div",{style:{display:"flex",gap:8,marginTop:16}},
+              h("button",{onClick:saveBulkImages,disabled:saving||!bulkFiles.some(f=>f.assigned),
+                style:{flex:1,padding:12,background:"linear-gradient(135deg,"+C.denim+","+C.denimD+")",
+                  color:"#fff",border:"none",borderRadius:12,fontWeight:700,fontSize:14,
+                  opacity:bulkFiles.some(f=>f.assigned)?1:0.5}},
+                saving?"Guardando...":"💾 Guardar "+bulkFiles.filter(f=>f.assigned).length+" fotos asignadas"),
+              h("button",{onClick:()=>{setBulkFiles([]);setBulkProgress(null);},
+                style:{padding:"12px 16px",background:C.roseL,border:"none",borderRadius:12,fontWeight:600}},
+                "Cancelar")
+            )
+          )
+        ),
+
+        // ── TAB PEDIDOS ──
+        tab==="pedidos"&&h("div",null,
+          h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}},
+            h("h3",{style:{margin:0,color:C.denim,fontFamily:"Georgia,serif"}},
+              "📋 Pedidos ("+orders.length+")",
+              pendientes>0&&h("span",{style:{marginLeft:8,background:"#dc2626",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20}},pendientes+" nuevos")
+            ),
+            orders.length>0&&h("button",{onClick:()=>exportCSV(orders),
+              style:{padding:"8px 12px",background:"linear-gradient(135deg,"+C.denim+","+C.denimD+")",color:"#fff",border:"none",borderRadius:10,fontWeight:700,fontSize:11}},
+              "📊 Exportar Excel")
+          ),
+          orders.length===0
+            ?h("div",{style:{textAlign:"center",padding:"40px 0",color:"#bbb"}},
+                h("p",{style:{fontSize:40}},"📋"),
+                h("p",{style:{fontSize:14}},"Aún no hay pedidos"),
+                h("p",{style:{fontSize:12,marginTop:6}},"Los pedidos aparecen aquí en tiempo real")
+              )
+            :orders.map(o=>h("div",{key:o.id,style:{background:"#fff",borderRadius:12,padding:12,marginBottom:8,
+                border:"2px solid "+((!o.estado||o.estado==="Pendiente")?C.denim:C.roseL)}},
+                h("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:6}},
+                  h("div",null,
+                    h("p",{style:{margin:0,fontWeight:700,fontSize:13}},"👤 "+o.nombre),
+                    h("p",{style:{margin:"1px 0 0",fontSize:11,color:"#888"}},"📱 "+o.telefono)
+                  ),
+                  h("div",{style:{textAlign:"right"}},
+                    h("p",{style:{margin:0,fontSize:10,color:"#aaa"}},new Date(o.fecha).toLocaleDateString("es-MX")),
+                    h("p",{style:{margin:"2px 0 0",fontSize:14,fontWeight:800,color:C.denim}},"$"+o.precio+" MXN")
+                  )
+                ),
+                h("div",{style:{background:C.roseL,borderRadius:8,padding:"6px 10px",marginBottom:8,fontSize:12}},
+                  h("b",null,o.codigo+" · "+o.marca)," · "+o.corte+" · "+o.color+" · Talla "+o.talla
+                ),
+                h("div",{style:{display:"flex",gap:6}},
+                  h("select",{value:o.estado||"Pendiente",onChange:e=>updateStatus(o.id,e.target.value),
+                    style:{flex:1,padding:"7px 8px",border:"2px solid "+C.roseL,borderRadius:8,fontSize:12,fontWeight:700}},
+                    ["Pendiente","En proceso","Entregado","Cancelado"].map(s=>h("option",{key:s},s))
+                  ),
+                  h("button",{onClick:()=>deleteOrder(o.id),
+                    style:{padding:"7px 10px",borderRadius:8,border:"none",background:"#fee2e2",color:"#dc2626",fontWeight:700}},"🗑️")
+                )
+              ))
+        ),
+
+        // ── TAB PRODUCTOS ──
+        tab==="productos"&&(
+          editing
+            ?h("div",null,
+                h("button",{onClick:()=>setEditing(null),style:{background:"none",border:"none",color:C.denim,cursor:"pointer",fontSize:13,fontWeight:600,marginBottom:14}},"← Volver"),
+                h("div",{style:{background:"#fff",borderRadius:16,padding:16,border:"1px solid "+C.roseL}},
+                  h("h3",{style:{margin:"0 0 14px",color:C.denim,fontFamily:"Georgia,serif"}},"✏️ "+form.codigo),
+                  h("div",{style:{display:"flex",gap:12,marginBottom:14}},
+                    h("div",{style:{width:80,height:96,borderRadius:10,overflow:"hidden",border:"2px solid "+C.roseL,flexShrink:0,background:C.roseL}},
+                      form.imagen
+                        ?h("img",{src:"data:image/jpeg;base64,"+form.imagen,style:{width:"100%",height:"100%",objectFit:"cover"}})
+                        :h("div",{style:{height:"100%",display:"flex",alignItems:"center",justifyContent:"center"}},"👖")
+                    ),
+                    h("div",{style:{flex:1}},
+                      h("button",{onClick:()=>fileRef.current.click(),
+                        style:{width:"100%",padding:"9px",border:"2px dashed "+C.denim,borderRadius:10,background:C.roseL,color:C.denim,fontWeight:700,fontSize:12,marginBottom:8}},
+                        "📁 Cambiar foto"),
+                      h("input",{ref:fileRef,type:"file",accept:"image/*",onChange:handleFile,style:{display:"none"}}),
+                      h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}},
+                        [{l:"Marca",k:"marca"},{l:"Color",k:"color"}].map(({l,k})=>h("div",{key:k},
+                          h("label",{style:{fontSize:10,fontWeight:700,color:C.rose,display:"block",marginBottom:3,textTransform:"uppercase"}},l),
+                          h("input",{value:form[k]||"",onChange:e=>{const v=e.target.value;setForm(f=>({...f,[k]:v}));},
+                            style:{width:"100%",padding:"7px 9px",border:"2px solid "+C.roseL,borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}})
+                        ))
+                      )
+                    )
+                  ),
+                  h("div",{style:{marginBottom:12}},
+                    h("label",{style:{fontSize:10,fontWeight:700,color:C.rose,display:"block",marginBottom:4,textTransform:"uppercase"}},"Estado"),
+                    h("select",{value:form.disponible?"si":"no",onChange:e=>{const v=e.target.value;setForm(f=>({...f,disponible:v==="si"}));},
+                      style:{padding:"8px 10px",border:"2px solid "+C.roseL,borderRadius:8,fontSize:13,width:"100%"}},
+                      h("option",{value:"si"},"✅ Disponible"),
+                      h("option",{value:"no"},"❌ Agotado")
+                    )
+                  ),
+                  h("div",null,
+                    h("label",{style:{fontSize:10,fontWeight:700,color:C.rose,display:"block",marginBottom:6,textTransform:"uppercase"}},"Precios por talla (MXN)"),
+                    h("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))",gap:6}},
+                      (form.tallas||[]).map(t=>h("div",{key:t,style:{textAlign:"center"}},
+                        h("div",{style:{fontSize:10,fontWeight:700,color:C.denim,marginBottom:2}},"Talla "+t),
+                        h("input",{type:"number",value:(form.precios&&form.precios[t])||"",
+                          onChange:e=>{const v=Number(e.target.value);setForm(f=>({...f,precios:{...f.precios,[t]:v}}));},
+                          style:{width:"100%",padding:"6px 4px",border:"2px solid "+C.roseL,borderRadius:7,fontSize:13,fontWeight:700,textAlign:"center",outline:"none",boxSizing:"border-box"}})
+                      ))
+                    )
+                  ),
+                  h("div",{style:{display:"flex",gap:8,marginTop:14}},
+                    h("button",{onClick:saveProduct,disabled:saving,
+                      style:{flex:1,padding:11,background:"linear-gradient(135deg,"+C.denim+","+C.denimD+")",color:"#fff",border:"none",borderRadius:10,fontWeight:700,fontSize:14}},
+                      saving?"Guardando...":"💾 Guardar"),
+                    h("button",{onClick:()=>setEditing(null),style:{padding:"11px 14px",background:C.roseL,border:"none",borderRadius:10,fontWeight:600}},"Cancelar")
+                  )
+                )
+              )
+            :h("div",null,
+                ["niña","dama","plus"].map(cat=>h("div",{key:cat,style:{marginBottom:20}},
+                  h("h3",{style:{margin:"0 0 10px",color:C.rose,fontSize:12,textTransform:"uppercase",letterSpacing:1}},
+                    cat==="niña"?"👧 Wide Leg Niña":cat==="plus"?"✨ Plus Size":"👩 Marine con Cinto Dama"),
+                  products.filter(p=>p.categoria===cat).map(p=>h("div",{key:p.codigo,
+                    style:{display:"flex",alignItems:"center",gap:10,background:"#fff",borderRadius:12,padding:10,marginBottom:6,border:"1px solid "+C.roseL}},
+                    h("div",{style:{width:48,height:56,borderRadius:8,overflow:"hidden",flexShrink:0,background:C.roseL}},
+                      p.imagen?h("img",{src:"data:image/jpeg;base64,"+p.imagen,style:{width:"100%",height:"100%",objectFit:"cover"}}):h("div",{style:{height:"100%",display:"flex",alignItems:"center",justifyContent:"center"}},"👖")
+                    ),
+                    h("div",{style:{flex:1,minWidth:0}},
+                      h("p",{style:{margin:0,fontWeight:700,fontSize:13}},p.codigo+" · "+p.marca),
+                      h("p",{style:{margin:"1px 0 0",fontSize:11,color:C.denim,fontWeight:700}},"Desde $"+Math.min(...Object.values(p.precios||{0:0})))
+                    ),
+                    h("div",{style:{display:"flex",gap:5,flexShrink:0}},
+                      h("button",{onClick:async()=>{
+                        const updated={...p,disponible:!p.disponible};
+                        await dbSaveProduct(updated);
+                        setProducts(prev=>prev.map(x=>x.codigo===p.codigo?updated:x));
+                      },style:{padding:"5px 8px",borderRadius:7,border:"none",
+                        background:p.disponible?"#dcfce7":"#fee2e2",
+                        color:p.disponible?"#16a34a":"#dc2626",fontWeight:700,fontSize:10}},
+                        p.disponible?"✓ Activo":"✗ Agotado"),
+                      h("button",{onClick:()=>openEdit(p),style:{padding:"5px 10px",borderRadius:7,border:"1px solid "+C.roseL,background:"#F9F5F0",fontSize:12}},"✏️")
+                    )
+                  ))
+                ))
+              )
+        )
+      )
+    )
+  );
+}
+
+// ── APP PRINCIPAL ─────────────────────────────────────────
+function App() {
+  const [products,setProducts]=useState([]);
+  const [orders,setOrders]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [cat,setCat]=useState("todas");
+  const [search,setSearch]=useState("");
+  const [modal,setModal]=useState(null);
+  const [admin,setAdmin]=useState(null);
+  const [showLogin,setShowLogin]=useState(false);
+  const [showPanel,setShowPanel]=useState(false);
+  const [toast,setToast]=useState("");
+
+  useEffect(()=>{
+    async function init(){
+      setLoading(true);
+      let prods=await dbGetProducts();
+      if(!prods){
+        // First time - populate from initial data
+        await dbInitProducts(INITIAL_PRODUCTS);
+        prods=await dbGetProducts();
+      }
+      setProducts(prods||INITIAL_PRODUCTS);
+      const ords=await dbGetOrders();
+      setOrders(ords);
+      setLoading(false);
+    }
+    init();
+  },[]);
+
+  function showT(msg){setToast(msg);setTimeout(()=>setToast(""),3000);}
+
+  async function confirmarPedido({nombre,telefono}){
+    const {product:p,talla}=modal;
+    const pedido={nombre,telefono,
+      codigo:p.codigo,marca:p.marca,modelo:p.modelo,
+      corte:p.corte,color:p.color,talla,precio:p.precios[talla]};
+    const saved=await dbAddOrder(pedido);
+    if(saved)setOrders(prev=>[saved,...prev]);
+    await sendEmail({...pedido,fecha:new Date().toISOString()});
+    const msg=encodeURIComponent(
+      "¡Hola! 👖 Quiero hacer un pedido:\n\n"+
+      "👤 Nombre: "+nombre+"\n📱 Teléfono: "+telefono+
+      "\n\n📦 Código: "+p.codigo+"\n🏷️ Marca: "+p.marca+
+      "\n✂️ Corte: "+p.corte+"\n🎨 Color: "+p.color+
+      "\n📏 Talla: "+talla+"\n💰 Precio: $"+p.precios[talla]+" MXN\n\n¿Está disponible? ✨"
+    );
+    window.open("https://wa.me/"+WA_NUM+"?text="+msg,"_blank");
+    setModal(null);
+    showT("✅ Pedido registrado · Se notificó a Jorge y Karina");
+  }
+
+  const filtered=products.filter(p=>{
+    const mc=cat==="todas"||p.categoria===cat;
+    const ms=!search||p.codigo.toLowerCase().includes(search.toLowerCase())||
+             p.marca.toLowerCase().includes(search.toLowerCase());
+    return mc&&ms;
+  });
+
+  const pendientes=orders.filter(o=>!o.estado||o.estado==="Pendiente").length;
+
+  if(loading)return h("div",{style:{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",flexDirection:"column",gap:16,color:C.denim}},
+    h("div",{className:"spinner",style:{width:40,height:40,borderWidth:4,borderColor:C.roseL,borderTopColor:C.denim}}),
+    h("p",{style:{fontSize:16,fontWeight:700}},"Cargando D'todojeans...")
+  );
+
+  return h("div",{style:{minHeight:"100vh",background:"#F9F5F0"}},
+    toast&&h("div",{style:{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",
+      background:C.charcoal,color:"#fff",padding:"10px 20px",borderRadius:30,
+      fontWeight:600,fontSize:13,zIndex:9999,boxShadow:"0 6px 20px rgba(0,0,0,0.25)",
+      whiteSpace:"nowrap",maxWidth:"90vw",textAlign:"center"}},toast),
+
+    h("header",{style:{background:"linear-gradient(135deg,"+C.denim+","+C.denimD+")",padding:"0 16px",position:"sticky",top:0,zIndex:100,boxShadow:"0 3px 16px rgba(74,106,150,0.35)"}},
+      h("div",{className:"header-h",style:{maxWidth:1200,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:60}},
+        h("div",{style:{display:"flex",alignItems:"center",gap:10}},
+          h("span",{style:{fontSize:24}},"👖"),
+          h("div",null,
+            h("h1",{style:{margin:0,fontSize:18,fontWeight:900,color:"#fff",fontFamily:"Georgia,serif"}},"D'todojeans"),
+            h("p",{style:{margin:0,fontSize:8,color:"rgba(255,255,255,0.7)",letterSpacing:2,textTransform:"uppercase"}},"CALIDAD Y ESTILO")
+          )
+        ),
+        h("div",{style:{display:"flex",alignItems:"center",gap:6}},
+          admin
+            ?h("div",{style:{display:"flex",gap:6,alignItems:"center"}},
+                pendientes>0&&h("span",{style:{background:"#dc2626",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20}},pendientes+" nuevos"),
+                h("button",{onClick:()=>setShowPanel(true),style:{padding:"6px 12px",background:"rgba(255,255,255,0.2)",color:"#fff",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,fontWeight:700,fontSize:12}},"⚙️ "+admin.nombre),
+                h("button",{onClick:()=>setAdmin(null),style:{padding:"6px 8px",background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.7)",border:"none",borderRadius:8,fontSize:11}},"Salir")
+              )
+            :h("button",{onClick:()=>setShowLogin(true),style:{padding:"6px 12px",background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.25)",borderRadius:8,fontWeight:600,fontSize:12}},"🔒 Admin")
+        )
+      )
+    ),
+
+    h("div",{style:{background:"linear-gradient(90deg,#C9ABBA33,#6B8FBF22)",borderBottom:"1px solid #F0E8EE",padding:"8px 16px",textAlign:"center"}},
+      h("p",{style:{margin:0,fontSize:12,color:C.denimD,fontWeight:600}},"✨ Elige tu modelo favorito y pide por WhatsApp ✨")
+    ),
+
+    h("div",{style:{background:"#fff",borderBottom:"1px solid "+C.roseL,padding:"10px 16px",position:"sticky",top:60,zIndex:90}},
+      h("div",{className:"filtros",style:{maxWidth:1200,margin:"0 auto",display:"flex",gap:8,alignItems:"center"}},
+        h("input",{value:search,onChange:e=>setSearch(e.target.value),placeholder:"🔍 Buscar...",
+          style:{flex:1,minWidth:100,padding:"8px 12px",border:"2px solid "+C.roseL,borderRadius:10,fontSize:13,outline:"none",background:"#F9F5F0"}}),
+        h("div",{className:"cats",style:{display:"flex",gap:4}},
+          [{key:"todas",label:"Todas"},{key:"niña",label:"👧 Niña"},{key:"dama",label:"👩 Dama"},{key:"plus",label:"✨ Plus"}]
+          .map(c=>h("button",{key:c.key,onClick:()=>setCat(c.key),
+            style:{padding:"7px 10px",borderRadius:9,fontSize:11,fontWeight:700,whiteSpace:"nowrap",
+              border:"2px solid "+(cat===c.key?C.denim:C.roseL),
+              background:cat===c.key?C.denim:"#fff",
+              color:cat===c.key?"#fff":C.charcoal}},c.label))
+        ),
+        h("span",{style:{fontSize:11,color:C.rose,fontWeight:600,whiteSpace:"nowrap"}},filtered.length+" items")
+      )
+    ),
+
+    h("main",{style:{maxWidth:1200,margin:"0 auto",padding:"16px 12px 60px"}},
+      filtered.length===0
+        ?h("div",{style:{textAlign:"center",padding:"60px 0",color:"#ccc"}},
+            h("p",{style:{fontSize:44}},"👖"),
+            h("p",{style:{fontSize:14}},"No se encontraron productos"))
+        :h("div",{className:"grid",style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:16}},
+            filtered.map(p=>h(ProductCard,{key:p.codigo,product:p,onOrder:(prod,t)=>setModal({product:prod,talla:t})}))
+          )
+    ),
+
+    h("footer",{style:{background:"linear-gradient(135deg,"+C.denim+","+C.denimD+")",color:"rgba(255,255,255,0.8)",textAlign:"center",padding:"16px 20px"}},
+      h("p",{style:{margin:0,fontFamily:"Georgia,serif",fontSize:14,color:"#fff",fontWeight:700}},"D'todojeans"),
+      h("p",{style:{margin:"3px 0 0",fontSize:10,letterSpacing:1}},"CALIDAD Y ESTILO · Precios en MXN · Pedidos por WhatsApp")
+    ),
+
+    modal&&h(ModalPedido,{product:modal.product,talla:modal.talla,onClose:()=>setModal(null),onConfirm:confirmarPedido}),
+    showLogin&&h(LoginAdmin,{onLogin:s=>{setAdmin(s);setShowLogin(false);setShowPanel(true);},onCancel:()=>setShowLogin(false)}),
+    showPanel&&admin&&h(AdminPanel,{products,setProducts,orders,setOrders,onClose:()=>setShowPanel(false)})
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(App));
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+</body>
+</html>
